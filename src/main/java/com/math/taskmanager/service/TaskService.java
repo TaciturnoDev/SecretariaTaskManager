@@ -313,6 +313,69 @@ public void touchTask(Task task) {
         return mapToResponse(updatedTask);
     }
 
+    /* ==================== DELEGAR TAREFA ===================*/
+
+    public TaskResponseDTO forwardTask(
+            Long taskId,
+            Long targetUserId,
+            String comment,
+            String login
+    ) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Tarefa não encontrada")
+                );
+
+        User currentUser = userService.findByLogin(login);
+
+        User targetUser = userService.findById(targetUserId);
+
+        // =====================================================
+        // VALIDAÇÕES
+        // =====================================================
+
+        // Não permitir delegar para o mesmo responsável
+        if (task.getAssignedTo().getId().equals(targetUser.getId())) {
+            throw new BusinessRuleException(
+                    "A tarefa já está atribuída a este usuário."
+            );
+        }
+
+        // Apenas usuários que NÃO são SUPERADMIN precisam passar
+        // pelas validações de setor e responsabilidade.
+        if (currentUser.getRole() != Role.SUPERADMIN) {
+
+            // Usuário deve possuir setor
+            if (currentUser.getSector() == null) {
+                throw new BusinessRuleException("Usuário sem setor.");
+            }
+
+            // A tarefa deve pertencer ao mesmo setor
+            if (!task.getSector().getId().equals(currentUser.getSector().getId())) {
+                throw new BusinessRuleException(
+                        "Você não pode delegar tarefas de outro setor."
+                );
+            }
+
+            // Usuário comum só pode delegar tarefas atribuídas a ele
+            if (currentUser.getRole() == Role.USER &&
+                    !task.getAssignedTo().getId().equals(currentUser.getId())) {
+
+                throw new BusinessRuleException(
+                        "Você só pode delegar tarefas atribuídas a você."
+                );
+            }
+        }
+
+     // ==============  DELEGAÇÃO =============== //
+        task.setAssignedTo(targetUser);
+        
+        Task updatedTask = taskRepository.save(task);
+        
+        return mapToResponse(updatedTask);
+    }
+    
     /* ===================================================== */
     /* DELETAR TAREFA                                        */
     /* ===================================================== */
