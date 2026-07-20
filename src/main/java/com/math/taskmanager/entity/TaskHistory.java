@@ -29,6 +29,13 @@ public class TaskHistory {
     @JoinColumn(name = "user_id")
     private User user;
     
+    /* ================= DESTINATÁRIO DA DELEGAÇÃO ================= */
+    
+    @ManyToOne
+    @JoinColumn(name = "delegated_to")
+    private User delegatedTo;
+    
+   
     /* ================= ANEXOS ==================*/
     
     @OneToMany(
@@ -44,6 +51,11 @@ public class TaskHistory {
     /* ================= AÇÃO ================= */
     @Column(columnDefinition = "TEXT")
     private String action;
+    
+    /* ================= COMENTÁRIO ================= */
+    
+    @Column(columnDefinition = "TEXT")
+    private String comment;
 
     /* =====================================================
        SNAPSHOT ANTIGO

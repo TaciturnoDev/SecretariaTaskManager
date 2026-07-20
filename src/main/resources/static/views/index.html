@@ -205,6 +205,93 @@
 </div>
 
 
+<!-- ================= MODAL DE DELEGAÇÃO ================= -->
+
+<div
+    id="delegateModalOverlay"
+    class="modal-overlay"
+    style="display:none;"
+>
+
+    <div class="modal-content delegate-modal">
+		
+		    <div class="delegate-task-title">
+				<strong>Tarefa:</strong>
+				<span id="delegateTaskTitle">-</span>
+			</div>
+
+        <h2>Delegar tarefa</h2>
+
+        <hr>
+
+        <div class="modal-section">
+
+            <span>Responsável atual</span>
+
+            <strong id="delegateCurrentResponsible">
+                -
+            </strong>
+
+        </div>
+
+        <hr>
+
+        <div class="modal-section">
+
+            <label for="delegateUserSelect">
+                Novo responsável
+            </label>
+
+            <select id="delegateUserSelect">
+
+                <option value="">
+                    Carregando usuários...
+                </option>
+
+            </select>
+
+        </div>
+
+        <hr>
+
+        <div class="modal-section">
+
+            <label for="delegateComment">
+                Comentário (opcional)
+            </label>
+
+            <textarea
+                id="delegateComment"
+                rows="4"
+                placeholder="Ex.: Encaminhando para continuidade da atividade."
+            ></textarea>
+
+        </div>
+
+        <hr>
+
+        <div class="modal-actions">
+
+            <button
+                id="cancelDelegateBtn"
+                onclick="closeDelegateModal()"
+            >
+                Cancelar
+            </button>
+
+            <button
+                id="confirmDelegateBtn"
+				onclick="confirmDelegate()"
+            >
+                Delegar tarefa
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
 <!-- ===================================================== -->
 <!-- JS -->
 <!-- ===================================================== -->

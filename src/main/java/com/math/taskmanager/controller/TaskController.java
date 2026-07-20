@@ -1,6 +1,7 @@
 package com.math.taskmanager.controller;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,14 +9,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.math.taskmanager.dto.ForwardTaskRequestDTO;
 import com.math.taskmanager.dto.TaskRequestDTO;
 import com.math.taskmanager.dto.TaskResponseDTO;
 import com.math.taskmanager.entity.TaskStatus;
+import com.math.taskmanager.dto.DelegationUserDTO;
 import com.math.taskmanager.service.TaskService;
+import com.math.taskmanager.service.UserService;
+import com.math.taskmanager.entity.User;
 
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
+
 
 @RestController
 @RequestMapping("/tasks")
@@ -23,10 +31,13 @@ import jakarta.validation.Valid;
 public class TaskController {
 
     private final TaskService taskService;
+    private final UserService userService;
+
 
     /* ===================================================== */
-    /*  CRIAR TAREFA                                      */
+    /*  CRIAR TAREFA                                         */
     /* ===================================================== */
+
     @PostMapping
     public ResponseEntity<TaskResponseDTO> create(
             @Valid @RequestBody TaskRequestDTO dto,
@@ -39,9 +50,11 @@ public class TaskController {
                 .body(taskService.create(dto, login));
     }
 
+
     /* ===================================================== */
-    /*  ATUALIZAR TAREFA         */
+    /*  ATUALIZAR TAREFA                                     */
     /* ===================================================== */
+
     @PutMapping("/{id}")
     public ResponseEntity<TaskResponseDTO> update(
             @PathVariable Long id,
@@ -56,9 +69,11 @@ public class TaskController {
         );
     }
 
+
     /* ===================================================== */
-    /*  LISTAR TAREFAS                                    */
+    /*  LISTAR TAREFAS                                       */
     /* ===================================================== */
+
     @GetMapping
     public ResponseEntity<Page<TaskResponseDTO>> findAll(
             @RequestParam(required = false) Long userId,
@@ -77,7 +92,25 @@ public class TaskController {
         );
     }
 
-    
+
+    /* ===================================================== */
+    /* USUÁRIOS DISPONÍVEIS PARA DELEGAÇÃO                   */
+    /* ===================================================== */
+
+    @GetMapping("/delegation-users")
+    public ResponseEntity<List<DelegationUserDTO>> getDelegationUsers(
+            Authentication authentication
+    ) {
+
+        String login = authentication.getName();
+
+        User currentUser = userService.findByLogin(login);
+
+        return ResponseEntity.ok(
+                userService.findUsersForDelegation(currentUser)
+        );
+    }
+
     /* ===================================================== */
     /* BUSCAR TAREFA POR ID                                  */
     /* ===================================================== */
@@ -97,10 +130,36 @@ public class TaskController {
                 )
         );
     }
-    
+
+
     /* ===================================================== */
-    /*  DELETAR TAREFA                                   */
+    /*  DELEGAR TAREFA                                       */
     /* ===================================================== */
+
+    @PutMapping("/{id}/forward")
+    public ResponseEntity<TaskResponseDTO> forwardTask(
+            @PathVariable Long id,
+            @Valid @RequestBody ForwardTaskRequestDTO dto,
+            Authentication authentication
+    ) {
+
+        String login = authentication.getName();
+
+        return ResponseEntity.ok(
+                taskService.forwardTask(
+                        id,
+                        dto.targetUserId(),
+                        dto.comment(),
+                        login
+                )
+        );
+    }
+
+
+    /* ===================================================== */
+    /*  DELETAR TAREFA                                       */
+    /* ===================================================== */
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,

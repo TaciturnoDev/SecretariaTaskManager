@@ -342,8 +342,7 @@ public void touchTask(Task task) {
             );
         }
 
-        // Apenas usuários que NÃO são SUPERADMIN precisam passar
-        // pelas validações de setor e responsabilidade.
+        // SUPERADMIN pode delegar qualquer tarefa
         if (currentUser.getRole() != Role.SUPERADMIN) {
 
             // Usuário deve possuir setor
@@ -351,14 +350,14 @@ public void touchTask(Task task) {
                 throw new BusinessRuleException("Usuário sem setor.");
             }
 
-            // A tarefa deve pertencer ao mesmo setor
+            // Só pode delegar tarefas do próprio setor
             if (!task.getSector().getId().equals(currentUser.getSector().getId())) {
                 throw new BusinessRuleException(
                         "Você não pode delegar tarefas de outro setor."
                 );
             }
 
-            // Usuário comum só pode delegar tarefas atribuídas a ele
+            // USER só pode delegar tarefas atribuídas a ele
             if (currentUser.getRole() == Role.USER &&
                     !task.getAssignedTo().getId().equals(currentUser.getId())) {
 
@@ -366,13 +365,56 @@ public void touchTask(Task task) {
                         "Você só pode delegar tarefas atribuídas a você."
                 );
             }
+
+            // Destinatário deve pertencer ao mesmo setor
+            if (targetUser.getSector() == null ||
+                    !targetUser.getSector().getId().equals(currentUser.getSector().getId())) {
+
+                throw new BusinessRuleException(
+                        "A tarefa só pode ser delegada para usuários do mesmo setor."
+                );
+            }
         }
 
-     // ==============  DELEGAÇÃO =============== //
-        task.setAssignedTo(targetUser);
-        
-        Task updatedTask = taskRepository.save(task);
-        
+     // =====================================================
+     // DELEGAÇÃO
+     // =====================================================
+
+     User previousResponsible = task.getAssignedTo();
+
+     task.setAssignedTo(targetUser);
+
+     /*
+      * Quando o SUPERADMIN delega para outro setor,
+      * a tarefa acompanha o novo responsável.
+      */
+     if (targetUser.getSector() != null) {
+         task.setSector(targetUser.getSector());
+     }
+
+     touch(task);
+
+     Task updatedTask = taskRepository.save(task);
+
+        // =====================================================
+        // HISTÓRICO
+        // =====================================================
+
+        String historyComment =
+                (comment == null || comment.isBlank())
+                        ? "Delegou a tarefa de "
+                        + previousResponsible.getName()
+                        + " para "
+                        + targetUser.getName()
+                        : comment;
+
+        taskHistoryService.registerDelegation(
+                updatedTask,
+                currentUser,
+                targetUser,
+                historyComment
+        );
+
         return mapToResponse(updatedTask);
     }
     

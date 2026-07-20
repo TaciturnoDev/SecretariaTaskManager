@@ -349,14 +349,39 @@ function renderTasks() {
                 ${getStatusLabel(task.status)}
             </div>
 
-            <div class="task-actions">
+	<div class="task-actions">
+
+			    <button
+			        title="Abrir tarefa"
+			        onclick="openTaskModal(${task.id})"
+			    >
+			        👁️
+			    </button>
+
+			    <button
+			        title="Editar tarefa"
+			        onclick="editTask(${task.id})"
+			    >
+			        ✏️
+			    </button>
+
+			    <button
+			        title="Delegar tarefa"
+			        onclick="openDelegateModal(${task.id})"
+			    >
+			        🔄
+			    </button>
+
+			    <button
+			        title="Excluir tarefa"
+			        onclick="deleteTask(${task.id})"
+			    >
+			        ❌
+			    </button>
+
+			</div>
+
 			
-			    <button onclick="openTaskModal(${task.id})">👁️</button>
-			
-                <button onclick="editTask(${task.id})">✏️</button>
-				
-                <button onclick="deleteTask(${task.id})">❌</button>
-            </div>
         `;
 
         list.appendChild(li);
@@ -1012,6 +1037,7 @@ function renderTaskModal(task) {
 		        <strong>
 		            ${task.assignedToName || "-"}
 		        </strong>
+				
 
 		    </div>
 
@@ -1289,7 +1315,158 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 		
 
+
+/* ================= DELEGAR TAREFA ================= */
+
+let selectedTaskToDelegate = null;
+
+function openDelegateModal(taskId) {
+
+    console.log("Abrindo modal de transferência:", taskId);
+
+    const task = tasks.find(t => t.id === taskId);
+
+    if (!task) return;
+
+    selectedTaskToDelegate = taskId;
 	
+    loadDelegateUsers();
+
+    document.getElementById("delegateTaskTitle").textContent =
+        task.title || "-";
+
+    document.getElementById("delegateCurrentResponsible").textContent =
+        task.assignedToName || "-";
+
+    const modal =
+        document.getElementById("delegateModalOverlay");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+}
+
+/* ================= CARREGAR USUÁRIOS PARA DELEGAÇÃO ================= */
+
+async function loadDelegateUsers() {
+
+    try {
+
+        const response =
+            await fetch("/tasks/delegation-users");
+
+        if (!response.ok) {
+            throw new Error("Erro ao carregar usuários.");
+        }
+
+        const data =
+            await response.json();
+
+        const select =
+            document.getElementById("delegateUserSelect");
+
+        select.innerHTML =
+            `<option value="">Selecione um usuário</option>`;
+
+        data.forEach(user => {
+
+            select.innerHTML += `
+                <option value="${user.id}">
+                    ${user.name} - ${user.sectorName || "Sem setor"}
+                </option>
+            `;
+
+        });
+
+    } catch (e) {
+
+        console.error("Erro ao carregar usuários:", e);
+    }
+}
+
+/* ================= CONFIRMAR DELEGAÇÃO ================= */
+
+async function confirmDelegate() {
+
+    if (!selectedTaskToDelegate) {
+        console.error("Nenhuma tarefa selecionada para delegação.");
+        return;
+    }
+
+    const newResponsibleId =
+        document.getElementById("delegateUserSelect").value;
+
+    const comment =
+        document.getElementById("delegateComment").value;
+
+    if (!newResponsibleId) {
+        alert("Selecione o novo responsável.");
+        return;
+    }
+
+    const data = {
+        targetUserId: Number(newResponsibleId),
+        comment: comment
+    };
+
+    console.log("Delegação:", {
+        taskId: selectedTaskToDelegate,
+        data
+    });
+
+
+    try {
+
+        const response = await fetch(
+            `/tasks/${selectedTaskToDelegate}/forward`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            }
+        );
+
+
+        if (!response.ok) {
+
+            const error = await response.text();
+
+            console.error("Erro ao delegar tarefa:", error);
+
+            alert("Erro ao delegar tarefa.");
+
+            return;
+        }
+
+
+        console.log("Tarefa delegada com sucesso.");
+
+        closeDelegateModal();
+
+        await carregarTarefas();
+
+
+    } catch (error) {
+
+        console.error("Erro na delegação:", error);
+
+        alert("Erro de comunicação com o servidor.");
+    }
+}
+
+/* ================= FECHAR DELEGAÇÃO ================= */
+
+function closeDelegateModal() {
+    const modal = document.getElementById("delegateModalOverlay");
+
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+
 	/* ================= UPLOAD DE ANEXO ================= */
 
 	/*async function uploadAttachment(taskId) {*/

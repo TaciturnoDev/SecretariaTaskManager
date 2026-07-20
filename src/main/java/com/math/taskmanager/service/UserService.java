@@ -6,12 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.math.taskmanager.dto.UserRequestDTO;
+import com.math.taskmanager.dto.DelegationUserDTO;
 import com.math.taskmanager.entity.Sector;
 import com.math.taskmanager.entity.User;
 import com.math.taskmanager.exception.BusinessRuleException;
 import com.math.taskmanager.exception.ResourceNotFoundException;
 import com.math.taskmanager.repository.UserRepository;
 
+import com.math.taskmanager.entity.Role;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -73,6 +75,9 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    
+    
+    
     /*
      * ==============================
      * BUSCAR POR ID
@@ -153,6 +158,7 @@ public class UserService {
      *  ALTERAR SETOR (FUTURO ADMIN)
      * ==============================
      */
+    
     public void updateSector(Long userId, Long sectorId) {
 
         User user = findById(userId);
@@ -162,5 +168,33 @@ public class UserService {
         user.setSector(sector);
 
         userRepository.save(user);
+    }
+    
+    
+    public List<DelegationUserDTO> findUsersForDelegation(User currentUser) {
+
+        return userRepository.findAll()
+                .stream()
+                .filter(User::getActive)
+                .filter(user -> user.getSector() != null)
+                .filter(user -> {
+
+                    // SUPERADMIN pode delegar para qualquer setor
+                    if (currentUser.getRole() == Role.SUPERADMIN) {
+                        return true;
+                    }
+
+                    // USER e ADMIN somente no próprio setor
+                    return currentUser.getSector() != null
+                            && user.getSector().getId()
+                            .equals(currentUser.getSector().getId());
+                })
+                .map(user -> new DelegationUserDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getSector().getId(),
+                        user.getSector().getName()
+                ))
+                .toList();
     }
 }

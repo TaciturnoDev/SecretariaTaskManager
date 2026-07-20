@@ -51,6 +51,36 @@ public class TaskHistoryService {
         return repository.save(history);
     }
 
+    
+    /* ================= REGISTRAR DELEGAÇÃO ================= */
+
+    public TaskHistory registerDelegation(
+            Task task,
+            User fromUser,
+            User delegatedTo,
+            String comment
+    ) {
+
+        TaskHistory history = TaskHistory.builder()
+
+                .task(task)
+
+                .user(fromUser)
+
+                .delegatedTo(delegatedTo)
+
+                .comment(comment)
+
+                .action("Delegou a tarefa")
+
+                .createdAt(LocalDateTime.now())
+
+                .build();
+
+        return repository.save(history);
+    }
+    
+    
     /* ================= LISTAR HISTÓRICO ================= */
 
     public List<TaskHistory> findByTask(Long taskId) {
