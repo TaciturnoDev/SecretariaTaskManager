@@ -19,6 +19,8 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AttachmentService {
@@ -244,6 +246,15 @@ public Attachment deactivateAttachment(
     return attachmentRepository.save(
             attachment
     );
+}
+
+
+/* documentação */
+
+public List<Attachment> findByTask(Long taskId) {
+
+    return attachmentRepository
+            .findByHistoryTaskIdAndActiveTrueOrderByUploadedAtDesc(taskId);
 }
 
 

@@ -17,6 +17,9 @@ import java.util.List;
 import com.math.taskmanager.dto.TaskHistoryResponseDTO;
 import java.time.LocalDateTime;
 
+import com.math.taskmanager.entity.Task;
+import com.math.taskmanager.repository.TaskRepository;
+
 import com.math.taskmanager.dto.AttachmentResponseDTO;
 
 
@@ -312,6 +315,18 @@ public void touchTask(Task task) {
 
         return mapToResponse(updatedTask);
     }
+    
+    
+    /* =========== GERAR PDF ======== */
+    public Task findEntityById(Long id) {
+
+        return taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Tarefa não encontrada.")
+                );
+
+    }
+    
 
     /* ==================== DELEGAR TAREFA ===================*/
 

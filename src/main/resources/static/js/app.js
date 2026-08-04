@@ -994,9 +994,23 @@ function renderTaskModal(task) {
 
     content.innerHTML = `
 
-        <h2>${task.title}</h2>
+	<div class="task-modal-header">
 
-        <hr>
+	    <h2>
+	        ${task.title}
+	    </h2>
+
+	    <button
+	        class="report-btn"
+	        onclick="downloadTaskReport(${task.id})"
+	        title="Gerar relatório"
+	    >
+	        📄 Relatório
+	    </button>
+
+	</div>
+
+	<hr>
 
 		<div class="task-info-grid">
 
@@ -1146,6 +1160,19 @@ function closeTaskModal() {
     overlay.style.display = "none";
 }
 
+
+/* =============== download pdf ================== */
+
+function downloadTaskReport(taskId) {
+
+    if (!taskId) {
+        console.error("ID da tarefa não informado.");
+        return;
+    }
+
+    window.open(`/tasks/${taskId}/report`, "_blank");
+
+}
 
 /* ================= ATUALIZAR ANEXO ================= */
 

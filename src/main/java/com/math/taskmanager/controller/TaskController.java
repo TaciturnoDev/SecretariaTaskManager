@@ -17,6 +17,8 @@ import com.math.taskmanager.dto.DelegationUserDTO;
 import com.math.taskmanager.service.TaskService;
 import com.math.taskmanager.service.UserService;
 import com.math.taskmanager.entity.User;
+import com.math.taskmanager.service.TaskPdfService;
+import com.math.taskmanager.entity.Task;
 
 import org.springframework.security.core.Authentication;
 
@@ -32,7 +34,7 @@ public class TaskController {
 
     private final TaskService taskService;
     private final UserService userService;
-
+    private final TaskPdfService taskPdfService;
 
     /* ===================================================== */
     /*  CRIAR TAREFA                                         */
@@ -156,6 +158,28 @@ public class TaskController {
     }
 
 
+    @GetMapping("/{id}/report")
+    public ResponseEntity<byte[]> generateReport(
+            @PathVariable Long id
+    ) {
+
+    	Task task = taskService.findEntityById(id);
+
+    	byte[] pdf = taskPdfService.generate(task);
+    	
+    	
+        return ResponseEntity.ok()
+                .header(
+                        "Content-Disposition",
+                        "attachment; filename=RD-" + id + ".pdf"
+                )
+                .header(
+                        "Content-Type",
+                        "application/pdf"
+                )
+                .body(pdf);
+    }
+    
     /* ===================================================== */
     /*  DELETAR TAREFA                                       */
     /* ===================================================== */

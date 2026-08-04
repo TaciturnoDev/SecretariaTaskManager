@@ -15,5 +15,12 @@ public interface AttachmentRepository
 	        Long historyId
 	);
 	
+	
+	/* documentação */
+	
+	List<Attachment> findByHistoryTaskIdAndActiveTrueOrderByUploadedAtDesc(
+	        Long taskId
+	);
+	
 }
 
