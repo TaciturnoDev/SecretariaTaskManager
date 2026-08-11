@@ -58,6 +58,7 @@ com lógica na expansão e evolução. o foco do projeto é suprir demandas em t
 e modelarem de regras de negócios, Clean Code, Documentação e etc. indo MUITO ALÉM do que se espera, Além de que foi inteiramente FullStack
 Desenvolvido somente por mim, do início ao fim.
 
+(Todo o visual do projeto está progredindo conforme a evolução do projeto. muito ainda vai ser refinado e aprimorado.)
 
 
 
