@@ -16,6 +16,7 @@ import com.math.taskmanager.dto.TaskResponseDTO;
 import com.math.taskmanager.entity.*;
 import com.math.taskmanager.exception.BusinessRuleException;
 import com.math.taskmanager.repository.TaskRepository;
+import com.math.taskmanager.repository.TaskHistoryRepository;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
@@ -28,6 +29,15 @@ class TaskServiceTest {
 
     @Mock
     private SectorService sectorService;
+    
+    @Mock
+    private TaskHistoryService taskHistoryService;
+
+    @Mock
+    private TaskHistoryRepository taskHistoryRepository;
+
+    @Mock
+    private TaskSlaService taskSlaService;
 
     @InjectMocks
     private TaskService taskService;

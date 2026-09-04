@@ -19,6 +19,7 @@ import java.util.List;
 import com.math.taskmanager.dto.TaskHistoryResponseDTO;
 
 import com.math.taskmanager.dto.AttachmentResponseDTO;
+import com.math.taskmanager.dto.TaskSlaDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final SectorService sectorService;
+    private final TaskSlaService taskSlaService;
 
     /* ===================================================== */
     /*  LISTAR TODOS USUÁRIOS (COM DTO)                    */
@@ -130,6 +132,8 @@ public class AdminService {
     /* ===================================================== */
     private TaskResponseDTO mapToResponse(Task task) {
 
+        TaskSlaDTO sla = taskSlaService.calculate(task);
+
         return new TaskResponseDTO(
 
                 task.getId(),
@@ -195,8 +199,12 @@ public class AdminService {
 
                 ))
                 .toList()
-                : List.of()
+                : List.of(),
+
+                sla
+
         );
-      }
+
+}
     }
 

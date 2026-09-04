@@ -24,6 +24,8 @@ public record TaskResponseDTO(
         Long createdById,
         String createdByName,
 
-        List<TaskHistoryResponseDTO> history
+        List<TaskHistoryResponseDTO> history,
+        
+        TaskSlaDTO sla
 
 ) {}

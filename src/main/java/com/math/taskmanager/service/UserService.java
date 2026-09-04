@@ -31,7 +31,7 @@ public class UserService {
      */
     public User create(UserRequestDTO dto) {
 
-        // 🔒 senha obrigatória
+        //  senha obrigatória
         if (dto.password() == null || dto.password().isBlank()) {
             throw new BusinessRuleException("Senha é obrigatória.");
         }

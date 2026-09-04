@@ -72,7 +72,7 @@ public class User {
         }
     }
 
-    // 🔥 ESSENCIAL PRO TASKSERVICE
+    //  ESSENCIAL PRO TASKSERVICE
     public boolean isSuperAdmin() {
         return Role.SUPERADMIN.equals(this.role);
     }

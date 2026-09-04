@@ -1,5 +1,6 @@
 package com.math.taskmanager.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -15,6 +16,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     Page<Task> findAll(Pageable pageable);
 
+    List<Task> findByStatusIn(List<TaskStatus> statuses);
+
     Page<Task> findByStatus(TaskStatus status, Pageable pageable);
 
     Page<Task> findByAssignedToId(Long assignedToId, Pageable pageable);
@@ -26,4 +29,5 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     );
 
     Page<Task> findBySectorId(Long sectorId, Pageable pageable);
+
 }

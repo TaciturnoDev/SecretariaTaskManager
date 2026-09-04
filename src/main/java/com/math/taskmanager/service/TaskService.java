@@ -21,6 +21,7 @@ import com.math.taskmanager.entity.Task;
 import com.math.taskmanager.repository.TaskRepository;
 
 import com.math.taskmanager.dto.AttachmentResponseDTO;
+import com.math.taskmanager.dto.TaskSlaDTO;
 
 
 @Service
@@ -32,6 +33,7 @@ public class TaskService {
     private final SectorService sectorService;
     private final TaskHistoryService taskHistoryService;
     private final TaskHistoryRepository taskHistoryRepository;
+    private final TaskSlaService taskSlaService;
 
     /* ===================================================== */
     /* CRIAR TAREFA                                          */
@@ -568,10 +570,11 @@ public void touchTask(Task task) {
     /* MAPPER                                                */
     /* ===================================================== */
 
-    private TaskResponseDTO mapToResponse(Task task) {
+	private TaskResponseDTO mapToResponse(Task task) {
 
-        return new TaskResponseDTO(
+	    TaskSlaDTO sla = taskSlaService.calculate(task);
 
+	    return new TaskResponseDTO(
                 task.getId(),
 
                 task.getTitle(),
@@ -641,7 +644,9 @@ public void touchTask(Task task) {
 
                 ))
                 .toList()
-                : List.of()
-        );        
-    }
+                : List.of(),
+
+                sla
+        );
+}
 }

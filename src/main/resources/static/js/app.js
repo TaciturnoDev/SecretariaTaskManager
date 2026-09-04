@@ -125,24 +125,6 @@ async function createTask() {
             }
         }
         
-		/* remover linha abaixo apos erro parar */
-		console.log("Usuário logado:", loggedUser);
-
-		console.log(
-		    "Role usuário:",
-		    loggedUser?.role
-		);
-
-		console.log(
-		    "Setor selecionado:",
-		    selectedSector
-		);
-
-		console.log(
-		    "Body enviada:",
-		    bodyData
-		);
-		/* até aqui */
 		
         const response = await fetch(url, {
             method: method,
@@ -770,6 +752,14 @@ async function refreshTask(taskId) {
 document.addEventListener("DOMContentLoaded", () => {
 
     carregarUsuarioLogado();
+	
+	const pendingTaskRequest =
+	    sessionStorage.getItem("pendingTaskRequest");
+
+	console.log(
+	    "Solicitação pendente:",
+	    pendingTaskRequest
+	);
 
     // ================= TELA DE TAREFAS =================
     if (document.getElementById("taskList")) {

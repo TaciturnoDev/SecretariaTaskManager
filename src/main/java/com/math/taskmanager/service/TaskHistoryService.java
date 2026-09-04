@@ -2,6 +2,7 @@ package com.math.taskmanager.service;
 
 import com.math.taskmanager.entity.Task;
 import com.math.taskmanager.entity.TaskHistory;
+import com.math.taskmanager.entity.TaskPriority;
 import com.math.taskmanager.entity.User;
 import com.math.taskmanager.repository.TaskHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -87,4 +88,24 @@ public class TaskHistoryService {
 
         return repository.findByTaskIdOrderByCreatedAtDesc(taskId);
     }
+    
+    
+    //================= METODO CONTADOR DE DIAS ============//
+    
+    public TaskHistory registerPriorityChange(
+            Task task,
+            TaskPriority oldPriority,
+            TaskPriority newPriority
+    ) {
+        TaskHistory history = TaskHistory.builder()
+                .task(task)
+                .action("Escalonamento automático por SLA")
+                .oldPriority(oldPriority)
+                .newPriority(newPriority)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return repository.save(history);
+    }
+    
 }

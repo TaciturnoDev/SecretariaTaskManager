@@ -124,9 +124,14 @@ function renderSetores() {
 			                        Conversar
 			                    </button>
 
-			                    <button class="task-btn">
-			                        Solicitar tarefa
-			                    </button>
+								<button
+								    class="task-btn"
+									onclick="requestTask(
+									    ${user.id},
+									    '${user.name.replace(/'/g, "\\'")}'
+									)">
+								    Solicitar Demanda
+								</button>
 
 			                </div>
 
@@ -162,6 +167,21 @@ function renderSetores() {
 
 }
 
+/* ================= SOLICITAR DEMANDA ================= */
+
+function requestTask(userId, userName) {
+
+    sessionStorage.setItem(
+        "pendingTaskRequest",
+        JSON.stringify({
+            userId: userId,
+            userName: userName
+        })
+    );
+
+    console.log("Solicitação salva.");
+
+}
 /* ================= INIT ================= */
 
 document.addEventListener("DOMContentLoaded", () => {

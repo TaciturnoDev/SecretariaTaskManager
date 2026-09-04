@@ -94,7 +94,7 @@ public class Task extends BaseEntity {
     private Sector sector;
 
     /*
-     *  HISTÓRICO DA TAREFA (CORREÇÃO)
+     *  HISTÓRICO DA TAREFA 
      */
     @OneToMany(
     	    mappedBy = "task",

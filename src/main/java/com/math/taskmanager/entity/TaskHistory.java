@@ -35,6 +35,15 @@ public class TaskHistory {
     @JoinColumn(name = "delegated_to")
     private User delegatedTo;
     
+    /* ================= PRIORIDADE dias/ SLA ================= */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "old_priority")
+    private TaskPriority oldPriority;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "new_priority")
+    private TaskPriority newPriority;
+    
    
     /* ================= ANEXOS ==================*/
     
