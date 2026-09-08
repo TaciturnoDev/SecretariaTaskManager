@@ -6,6 +6,7 @@ import com.math.taskmanager.service.NotificationService;
 import com.math.taskmanager.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -29,10 +30,13 @@ public class NotificationController {
      */
     @GetMapping
     public ResponseEntity<List<Notification>> findMyNotifications(
-            @RequestParam Long userId) {
+            Authentication authentication) {
+
+        User user =
+                userService.findByLogin(authentication.getName());
 
         return ResponseEntity.ok(
-                notificationService.findByUser(userId)
+                notificationService.findByUser(user.getId())
         );
     }
 
@@ -41,10 +45,13 @@ public class NotificationController {
      */
     @GetMapping("/unread-count")
     public ResponseEntity<Long> countUnread(
-            @RequestParam Long userId) {
+            Authentication authentication) {
+
+        User user =
+                userService.findByLogin(authentication.getName());
 
         return ResponseEntity.ok(
-                notificationService.countUnread(userId)
+                notificationService.countUnread(user.getId())
         );
     }
 
@@ -53,9 +60,13 @@ public class NotificationController {
      */
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        notificationService.markAsRead(id);
+        User user =
+                userService.findByLogin(authentication.getName());
+
+        notificationService.markAsRead(id, user.getId());
 
         return ResponseEntity.noContent().build();
     }
@@ -65,9 +76,13 @@ public class NotificationController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deactivate(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        notificationService.deactivate(id);
+        User user =
+                userService.findByLogin(authentication.getName());
+
+        notificationService.deactivate(id, user.getId());
 
         return ResponseEntity.noContent().build();
     }

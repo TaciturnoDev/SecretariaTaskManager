@@ -61,35 +61,57 @@ public class NotificationService {
                 .countByUserIdAndReadFalseAndActiveTrue(userId);
     }
 
+    /* ADICIONANDO NOTIFICAÇÃO 
+     */
+     private Notification findNotificationForUser(
+        Long notificationId,
+        Long userId) {
+
+    Notification notification = notificationRepository
+            .findById(notificationId)
+            .orElseThrow(() ->
+                    new RuntimeException("Notificação não encontrada."));
+
+    if (!notification.getUser().getId().equals(userId)) {
+        throw new RuntimeException(
+                "Você não tem permissão para acessar esta notificação."
+        );
+    }
+
+    return notification;
+}
+     
+     
+     
     /*
      * Marca uma notificação como lida
      */
-    @Transactional
-    public void markAsRead(Long notificationId) {
+     @Transactional
+     public void markAsRead(
+             Long notificationId,
+             Long userId) {
 
-        Notification notification = notificationRepository
-                .findById(notificationId)
-                .orElseThrow(() ->
-                        new RuntimeException("Notificação não encontrada."));
+         Notification notification =
+                 findNotificationForUser(notificationId, userId);
 
-        notification.setRead(true);
+         notification.setRead(true);
 
-        notificationRepository.save(notification);
-    }
+         notificationRepository.save(notification);
+     }
 
     /*
      * Oculta uma notificação
      */
-    @Transactional
-    public void deactivate(Long notificationId) {
+     @Transactional
+     public void deactivate(
+             Long notificationId,
+             Long userId) {
 
-        Notification notification = notificationRepository
-                .findById(notificationId)
-                .orElseThrow(() ->
-                        new RuntimeException("Notificação não encontrada."));
+         Notification notification =
+                 findNotificationForUser(notificationId, userId);
 
-        notification.setActive(false);
+         notification.setActive(false);
 
-        notificationRepository.save(notification);
-    }
+         notificationRepository.save(notification);
+     }
 }

@@ -59,14 +59,14 @@ public class Notification {
     /*
      * Indica se o usuário já leu
      */
-    @Column(nullable = false)
+    @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean read = false;
 
     /*
      * Indica se a notificação continua visível
      */
-    @Column(nullable = false)
+    @Column(name = "active", nullable = false)
     @Builder.Default
     private Boolean active = true;
 
