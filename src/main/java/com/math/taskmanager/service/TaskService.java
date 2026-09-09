@@ -34,7 +34,8 @@ public class TaskService {
     private final TaskHistoryService taskHistoryService;
     private final TaskHistoryRepository taskHistoryRepository;
     private final TaskSlaService taskSlaService;
-
+    private final NotificationService notificationService;
+    
     /* ===================================================== */
     /* CRIAR TAREFA                                          */
     /* ===================================================== */
@@ -432,6 +433,17 @@ public void touchTask(Task task) {
                 historyComment
         );
 
+        notificationService.create(
+                targetUser,
+                "TASK_DELEGATED",
+                "Nova tarefa atribuída",
+                "A tarefa \"" + updatedTask.getTitle()
+                        + "\" foi delegada para você por "
+                        + currentUser.getName() + ".",
+                "TASK",
+                updatedTask.getId()
+        );
+        
         return mapToResponse(updatedTask);
     }
     
