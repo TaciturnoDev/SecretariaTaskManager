@@ -80,6 +80,7 @@ public class TaskService {
                 .assignedTo(user)
                 .sector(sector)
                 .lastMovementAt(LocalDateTime.now())
+                .priorityChangedAt(LocalDateTime.now())
                 .build();
 
         task = taskRepository.save(task);
@@ -164,15 +165,15 @@ public class TaskService {
     
     /* REGISTRO HISTORICO */
     
-public void touchTask(Task task) {
-	task.setLastMovementAt(
-			LocalDateTime.now()
-			);
-	
-	taskRepository.save(task);
-	
-}
-    
+    public void touchTask(Task task) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        task.setLastMovementAt(now);
+        task.setPriorityChangedAt(now);
+
+        taskRepository.save(task);
+    } 
     
     
     /* ===================================================== */
@@ -573,10 +574,13 @@ public void touchTask(Task task) {
     
     /* 	ADIÇÃO PARA URGENCIA EM DIAS */
 	
-	private void touch(Task task) {
-	    task.setLastMovementAt(LocalDateTime.now());
-	}
+    private void touch(Task task) {
 
+        LocalDateTime now = LocalDateTime.now();
+
+        task.setLastMovementAt(now);
+        task.setPriorityChangedAt(now);
+    }
 
     /* ===================================================== */
     /* MAPPER                                                */

@@ -1,12 +1,12 @@
 package com.math.taskmanager.controller;
 
-import com.math.taskmanager.entity.Notification;
 import com.math.taskmanager.entity.User;
 import com.math.taskmanager.service.NotificationService;
 import com.math.taskmanager.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import com.math.taskmanager.dto.NotificationResponseDTO;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class NotificationController {
      * Lista as notificações do usuário
      */
     @GetMapping
-    public ResponseEntity<List<Notification>> findMyNotifications(
+    public ResponseEntity<List<NotificationResponseDTO>> findMyNotifications(
             Authentication authentication) {
 
         User user =

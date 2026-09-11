@@ -20,14 +20,14 @@ public class TaskSlaService {
 
     private final TaskRepository taskRepository;
     private final TaskHistoryService taskHistoryService;
+    private final NotificationService notificationService;
 
     public TaskSlaDTO calculate(Task task) {
 
         TaskPriority currentPriority = task.getPriority();
 
         /*
-         * LOW não participa da escalada automática.
-         * Permanece LOW independentemente dos dias.
+         * LOW não participa do SLA automático.
          */
         if (currentPriority == TaskPriority.LOW) {
 
@@ -39,10 +39,9 @@ public class TaskSlaService {
         }
 
         /*
-         * Sem lastMovementAt não é possível calcular
-         * os dias sem movimentação.
+         * URGENT já é a maior prioridade.
          */
-        if (task.getLastMovementAt() == null) {
+        if (currentPriority == TaskPriority.URGENT) {
 
             return new TaskSlaDTO(
                     0,
@@ -51,14 +50,35 @@ public class TaskSlaService {
             );
         }
 
-        long daysWithoutMovement = calculateDaysWithoutMovement(
-                task.getLastMovementAt()
-        );
+        /*
+         * Para tarefas antigas, priorityChangedAt pode estar NULL.
+         *
+         * Nesse caso usamos lastMovementAt como início
+         * do ciclo atual do SLA.
+         */
+        LocalDateTime cycleStart = task.getPriorityChangedAt();
 
-        TaskPriority suggestedPriority = calculateSuggestedPriority(
-                currentPriority,
-                daysWithoutMovement
-        );
+        if (cycleStart == null) {
+            cycleStart = task.getLastMovementAt();
+        }
+
+        if (cycleStart == null) {
+
+            return new TaskSlaDTO(
+                    0,
+                    currentPriority,
+                    currentPriority
+            );
+        }
+
+        long daysWithoutMovement =
+                calculateDaysWithoutMovement(cycleStart);
+
+        TaskPriority suggestedPriority =
+                calculateSuggestedPriority(
+                        currentPriority,
+                        daysWithoutMovement
+                );
 
         return new TaskSlaDTO(
                 daysWithoutMovement,
@@ -72,16 +92,21 @@ public class TaskSlaService {
      * ESCALONAMENTO AUTOMÁTICO POR SLA
      * ============================================================
      *
-     * Este método é responsável por PERSISTIR a escalada.
+     * Este método é responsável por:
      *
-     * O calculate() continua sendo apenas uma consulta/cálculo.
+     * 1. verificar se existe escalada;
+     * 2. alterar a prioridade;
+     * 3. iniciar novo ciclo de SLA;
+     * 4. persistir a alteração;
+     * 5. registrar histórico;
+     * 6. enviar notificação.
      */
     @Transactional
     public TaskPriority escalateIfNecessary(Task task) {
 
         TaskSlaDTO sla = calculate(task);
 
-        TaskPriority currentPriority = task.getPriority();
+        TaskPriority currentPriority = sla.currentPriority();
         TaskPriority suggestedPriority = sla.suggestedPriority();
 
         /*
@@ -93,16 +118,23 @@ public class TaskSlaService {
             return currentPriority;
         }
 
-        /*
-         * Guarda a prioridade anterior
-         * antes de alterar a tarefa.
-         */
         TaskPriority oldPriority = currentPriority;
 
         /*
-         * Atualiza a prioridade da tarefa.
+         * Atualiza a prioridade.
          */
         task.setPriority(suggestedPriority);
+
+        /*
+         * IMPORTANTE:
+         *
+         * A escalada automática NÃO é movimentação.
+         *
+         * Portanto:
+         * - lastMovementAt NÃO muda;
+         * - priorityChangedAt inicia o novo ciclo.
+         */
+        task.setPriorityChangedAt(LocalDateTime.now());
 
         /*
          * Persiste a nova prioridade.
@@ -110,12 +142,29 @@ public class TaskSlaService {
         taskRepository.save(task);
 
         /*
-         * Registra a alteração no histórico.
+         * Registra a alteração oficial no histórico.
          */
         taskHistoryService.registerPriorityChange(
                 task,
                 oldPriority,
                 suggestedPriority
+        );
+
+        /*
+         * Notifica o responsável pela tarefa.
+         */
+        notificationService.create(
+                task.getAssignedTo(),
+                "TASK_SLA_ESCALATED",
+                "Prioridade elevada por SLA",
+                "A tarefa \"" + task.getTitle()
+                        + "\" teve a prioridade elevada de "
+                        + oldPriority
+                        + " para "
+                        + suggestedPriority
+                        + " por falta de movimentação.",
+                "TASK",
+                task.getId()
         );
 
         return suggestedPriority;
@@ -127,77 +176,46 @@ public class TaskSlaService {
     ) {
 
         /*
-         * 28+ dias → URGENT
+         * MEDIUM → HIGH após 15 dias.
          */
-        if (daysWithoutMovement >= 28) {
+        if (currentPriority == TaskPriority.MEDIUM
+                && daysWithoutMovement >= 15) {
 
-            return higherPriority(
-                    currentPriority,
-                    TaskPriority.URGENT
-            );
+            return TaskPriority.HIGH;
         }
 
         /*
-         * 21–27 dias → HIGH
+         * HIGH → URGENT após 10 dias.
          */
-        if (daysWithoutMovement >= 21) {
+        if (currentPriority == TaskPriority.HIGH
+                && daysWithoutMovement >= 10) {
 
-            return higherPriority(
-                    currentPriority,
-                    TaskPriority.HIGH
-            );
+            return TaskPriority.URGENT;
         }
 
-        /*
-         * 11–20 dias → MEDIUM
-         */
-        if (daysWithoutMovement >= 11) {
-
-            return higherPriority(
-                    currentPriority,
-                    TaskPriority.MEDIUM
-            );
-        }
-
-        /*
-         * Até 10 dias, mantém a prioridade atual.
-         */
         return currentPriority;
-    }
-
-    private TaskPriority higherPriority(
-            TaskPriority currentPriority,
-            TaskPriority suggestedPriority
-    ) {
-
-        /*
-         * A prioridade nunca diminui.
-         */
-        if (getPriorityLevel(currentPriority)
-                >= getPriorityLevel(suggestedPriority)) {
-
-            return currentPriority;
-        }
-
-        return suggestedPriority;
     }
 
     private int getPriorityLevel(TaskPriority priority) {
 
         return switch (priority) {
+
             case LOW -> 1;
+
             case MEDIUM -> 2;
+
             case HIGH -> 3;
+
             case URGENT -> 4;
         };
     }
 
     private long calculateDaysWithoutMovement(
-            LocalDateTime lastMovementAt
+            LocalDateTime cycleStart
     ) {
 
         return ChronoUnit.DAYS.between(
-                lastMovementAt.toLocalDate(),
+                cycleStart.toLocalDate(),
                 LocalDate.now()
         );
     }

@@ -5,6 +5,7 @@ import com.math.taskmanager.entity.User;
 import com.math.taskmanager.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.math.taskmanager.dto.NotificationResponseDTO;
 
 import java.util.List;
 
@@ -47,9 +48,22 @@ public class NotificationService {
      * Busca as notificações visíveis do usuário
      */
     @Transactional(readOnly = true)
-    public List<Notification> findByUser(Long userId) {
+    public List<NotificationResponseDTO> findByUser(Long userId) {
+
         return notificationRepository
-                .findByUserIdAndActiveTrueOrderByCreatedAtDesc(userId);
+                .findByUserIdAndActiveTrueOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(notification -> new NotificationResponseDTO(
+                        notification.getId(),
+                        notification.getType(),
+                        notification.getTitle(),
+                        notification.getMessage(),
+                        notification.getReferenceType(),
+                        notification.getReferenceId(),
+                        notification.getRead(),
+                        notification.getCreatedAt()
+                ))
+                .toList();
     }
 
     /*

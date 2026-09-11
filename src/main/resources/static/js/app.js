@@ -615,31 +615,470 @@ async function loadSectorFilter() {
 }
 
 
+/* ================= NOTIFICAÇÕES ================= */
+
+let notifications = [];
+let unreadNotificationsCount = 0;
+
+
+/* ================= CARREGAR NOTIFICAÇÕES ================= */
+
+async function carregarNotificacoes() {
+
+    try {
+
+        const response =
+            await fetch("/notifications");
+
+        if (!response.ok) {
+            throw new Error(
+                "Erro ao buscar notificações."
+            );
+        }
+
+        notifications =
+            await response.json();
+
+        console.log(
+            "Notificações carregadas:",
+            notifications
+        );
+
+        renderNotifications();
+
+    } catch (e) {
+
+        console.error(
+            "Erro ao carregar notificações:",
+            e
+        );
+
+        notifications = [];
+
+        renderNotifications();
+    }
+}
+
+
+/* ================= CONTADOR ================= */
+
+async function carregarContadorNotificacoes() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/notifications/unread-count"
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Erro ao buscar contador de notificações."
+            );
+        }
+
+        unreadNotificationsCount =
+            await response.json();
+
+        console.log(
+            "Notificações não lidas:",
+            unreadNotificationsCount
+        );
+
+        atualizarBadgeNotificacoes();
+
+    } catch (e) {
+
+        console.error(
+            "Erro ao carregar contador de notificações:",
+            e
+        );
+
+        unreadNotificationsCount = 0;
+
+        atualizarBadgeNotificacoes();
+    }
+}
+
+
+/* ================= BADGE ================= */
+
+function atualizarBadgeNotificacoes() {
+
+    const badge =
+        document.getElementById(
+            "notificationBadge"
+        );
+
+    if (!badge) {
+        return;
+    }
+
+    if (unreadNotificationsCount > 0) {
+
+        badge.textContent =
+            unreadNotificationsCount;
+
+        badge.style.display =
+            "flex";
+
+    } else {
+
+        badge.style.display =
+            "none";
+    }
+}
+
+
+/* ================= ABRIR / FECHAR ================= */
+
+function toggleNotifications() {
+
+    const panel =
+        document.getElementById(
+            "notificationPanel"
+        );
+
+    if (!panel) {
+        return;
+    }
+
+    const isHidden =
+        panel.style.display === "none" ||
+        panel.style.display === "";
+
+    if (isHidden) {
+
+        panel.style.display = "block";
+
+        renderNotifications();
+
+    } else {
+
+        panel.style.display = "none";
+    }
+}
+
+
+function closeNotifications() {
+
+    const panel =
+        document.getElementById(
+            "notificationPanel"
+        );
+
+    if (panel) {
+        panel.style.display = "none";
+    }
+}
+
+
+/* ================= RENDERIZAR ================= */
+
+function renderNotifications() {
+
+    const list =
+        document.getElementById(
+            "notificationList"
+        );
+
+    if (!list) {
+        return;
+    }
+
+    list.innerHTML = "";
+
+    if (!notifications || notifications.length === 0) {
+
+        list.innerHTML = `
+            <div class="notification-empty">
+                Nenhuma notificação.
+            </div>
+        `;
+
+        return;
+    }
+
+    notifications.forEach(notification => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "notification-item" +
+            (notification.read
+                ? ""
+                : " unread");
+
+
+        const title =
+            document.createElement("div");
+
+        title.className =
+            "notification-title";
+
+        title.textContent =
+            notification.title;
+
+
+        const message =
+            document.createElement("div");
+
+        message.className =
+            "notification-message";
+
+        message.textContent =
+            notification.message;
+
+
+        const date =
+            document.createElement("div");
+
+        date.className =
+            "notification-date";
+
+        date.textContent =
+            formatarDataNotificacao(
+                notification.createdAt
+            );
+
+
+        const actions =
+            document.createElement("div");
+
+        actions.className =
+            "notification-actions";
+
+
+        if (!notification.read) {
+
+            const readButton =
+                document.createElement("button");
+
+            readButton.className =
+                "notification-read";
+
+            readButton.textContent =
+                "Marcar como lida";
+
+            readButton.addEventListener(
+                "click",
+                () =>
+                    marcarNotificacaoComoLida(
+                        notification.id
+                    )
+            );
+
+            actions.appendChild(
+                readButton
+            );
+        }
+
+
+        const deleteButton =
+            document.createElement("button");
+
+        deleteButton.className =
+            "notification-delete";
+
+        deleteButton.textContent =
+            "Ocultar";
+
+        deleteButton.addEventListener(
+            "click",
+            () =>
+                ocultarNotificacao(
+                    notification.id
+                )
+        );
+
+        actions.appendChild(
+            deleteButton
+        );
+
+
+        item.appendChild(title);
+        item.appendChild(message);
+        item.appendChild(date);
+        item.appendChild(actions);
+
+        list.appendChild(item);
+    });
+}
+
+
+/* ================= DATA ================= */
+
+function formatarDataNotificacao(data) {
+
+    if (!data) {
+        return "";
+    }
+
+    const date =
+        new Date(data);
+
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return date.toLocaleString(
+        "pt-BR",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+/* ================= MARCAR COMO LIDA ================= */
+
+async function marcarNotificacaoComoLida(
+    notificationId
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                `/notifications/${notificationId}/read`,
+                {
+                    method: "PUT"
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Erro ao marcar notificação como lida."
+            );
+        }
+
+        const notification =
+            notifications.find(
+                n => n.id === notificationId
+            );
+
+        if (notification) {
+            notification.read = true;
+        }
+
+        unreadNotificationsCount =
+            Math.max(
+                0,
+                unreadNotificationsCount - 1
+            );
+
+        atualizarBadgeNotificacoes();
+
+        renderNotifications();
+
+    } catch (e) {
+
+        console.error(
+            "Erro ao marcar notificação como lida:",
+            e
+        );
+    }
+}
+
+
+/* ================= OCULTAR ================= */
+
+async function ocultarNotificacao(
+    notificationId
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                `/notifications/${notificationId}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Erro ao ocultar notificação."
+            );
+        }
+
+        const notification =
+            notifications.find(
+                n => n.id === notificationId
+            );
+
+        if (
+            notification &&
+            !notification.read
+        ) {
+
+            unreadNotificationsCount =
+                Math.max(
+                    0,
+                    unreadNotificationsCount - 1
+                );
+        }
+
+        notifications =
+            notifications.filter(
+                n => n.id !== notificationId
+            );
+
+        atualizarBadgeNotificacoes();
+
+        renderNotifications();
+
+    } catch (e) {
+
+        console.error(
+            "Erro ao ocultar notificação:",
+            e
+        );
+    }
+}	
 /* ================= USUÁRIO LOGADO ================= */
+
 async function carregarUsuarioLogado() {
 
     try {
 
-        const response = await fetch("/auth/me");
+        const response =
+            await fetch("/auth/me");
 
         if (!response.ok) {
-            throw new Error("Não autenticado");
+
+            throw new Error(
+                "Não autenticado"
+            );
         }
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
         loggedUser = data;
 
-        loggedUserSectorId = data.sectorId || null;
+        loggedUserSectorId =
+            data.sectorId || null;
 
-        document.getElementById("loggedUserName").innerText =
-            data.username;
+        document.getElementById(
+            "loggedUserName"
+        ).innerText = data.username;
 
-        // ================= SUPERADMIN =================
+
+        /* ================= SUPERADMIN ================= */
+
         if (loggedUser.role === "SUPERADMIN") {
 
             const sectorSelect =
-                document.getElementById("taskSectorSelect");
+                document.getElementById(
+                    "taskSectorSelect"
+                );
 
             if (sectorSelect) {
 
@@ -652,10 +1091,13 @@ async function carregarUsuarioLogado() {
 
     } catch (e) {
 
-        console.error("Erro ao pegar usuário:", e);
+        console.error(
+            "Erro ao pegar usuário:",
+            e
+        );
+
     }
 }
-
 /* ================= CARREGAR TAREFAS ================= */
 async function carregarTarefas() {
 
@@ -700,7 +1142,9 @@ async function carregarTarefas() {
     }
 }
 
-
+fetch("/auth/me")
+    .then(response => response.json())
+    .then(data => console.log(data));
 /* ================= ATUALIZAR UMA TAREFA ================= */
 
 async function refreshTask(taskId) {
@@ -749,21 +1193,24 @@ async function refreshTask(taskId) {
 }
 
 /* ================= INIT ================= */
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-    carregarUsuarioLogado();
-	
-	const pendingTaskRequest =
-	    sessionStorage.getItem("pendingTaskRequest");
+    await carregarUsuarioLogado();
 
-	console.log(
-	    "Solicitação pendente:",
-	    pendingTaskRequest
-	);
+    await carregarNotificacoes();
+    await carregarContadorNotificacoes();
+
+    const pendingTaskRequest =
+        sessionStorage.getItem("pendingTaskRequest");
+
+    console.log(
+        "Solicitação pendente:",
+        pendingTaskRequest
+    );
 
     // ================= TELA DE TAREFAS =================
-    if (document.getElementById("taskList")) {
 
+    if (document.getElementById("taskList")) {
         carregarTarefas();
 
         document.getElementById("filterUser")

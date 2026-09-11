@@ -1,6 +1,9 @@
 package com.math.taskmanager.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.time.LocalDateTime;
 
@@ -9,24 +12,24 @@ import org.junit.jupiter.api.Test;
 import com.math.taskmanager.dto.TaskSlaDTO;
 import com.math.taskmanager.entity.Task;
 import com.math.taskmanager.entity.TaskPriority;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
-
 import com.math.taskmanager.repository.TaskRepository;
 
 class TaskSlaServiceTest {
 
-    private final TaskRepository taskRepository = mock(TaskRepository.class);
+    private final TaskRepository taskRepository =
+            mock(TaskRepository.class);
 
     private final TaskHistoryService taskHistoryService =
             mock(TaskHistoryService.class);
 
+    private final NotificationService notificationService =
+            mock(NotificationService.class);
+
     private final TaskSlaService service =
             new TaskSlaService(
                     taskRepository,
-                    taskHistoryService
+                    taskHistoryService,
+                    notificationService
             );
 
     @Test
@@ -62,13 +65,13 @@ class TaskSlaServiceTest {
     }
 
     @Test
-    void shouldKeepMediumPriorityUntilTenDays() {
+    void shouldKeepMediumPriorityUntilFourteenDays() {
 
         Task task = new Task();
 
         task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(10)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(14)
         );
 
         TaskSlaDTO result = service.calculate(task);
@@ -78,29 +81,13 @@ class TaskSlaServiceTest {
     }
 
     @Test
-    void shouldEscalateMediumToMediumAtElevenDays() {
+    void shouldEscalateMediumToHighAtFifteenDays() {
 
         Task task = new Task();
 
         task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(11)
-        );
-
-        TaskSlaDTO result = service.calculate(task);
-
-        assertEquals(TaskPriority.MEDIUM, result.currentPriority());
-        assertEquals(TaskPriority.MEDIUM, result.suggestedPriority());
-    }
-
-    @Test
-    void shouldEscalateMediumToHighAtTwentyOneDays() {
-
-        Task task = new Task();
-
-        task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(21)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(15)
         );
 
         TaskSlaDTO result = service.calculate(task);
@@ -110,29 +97,29 @@ class TaskSlaServiceTest {
     }
 
     @Test
-    void shouldEscalateMediumToUrgentAtTwentyEightDays() {
-
-        Task task = new Task();
-
-        task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(28)
-        );
-
-        TaskSlaDTO result = service.calculate(task);
-
-        assertEquals(TaskPriority.MEDIUM, result.currentPriority());
-        assertEquals(TaskPriority.URGENT, result.suggestedPriority());
-    }
-
-    @Test
-    void shouldEscalateHighToUrgentAtTwentyEightDays() {
+    void shouldKeepHighPriorityUntilNineDays() {
 
         Task task = new Task();
 
         task.setPriority(TaskPriority.HIGH);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(28)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(9)
+        );
+
+        TaskSlaDTO result = service.calculate(task);
+
+        assertEquals(TaskPriority.HIGH, result.currentPriority());
+        assertEquals(TaskPriority.HIGH, result.suggestedPriority());
+    }
+
+    @Test
+    void shouldEscalateHighToUrgentAtTenDays() {
+
+        Task task = new Task();
+
+        task.setPriority(TaskPriority.HIGH);
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(10)
         );
 
         TaskSlaDTO result = service.calculate(task);
@@ -147,38 +134,44 @@ class TaskSlaServiceTest {
         Task task = new Task();
 
         task.setPriority(TaskPriority.URGENT);
-        task.setLastMovementAt(
+        task.setPriorityChangedAt(
                 LocalDateTime.now().minusDays(40)
         );
 
         TaskSlaDTO result = service.calculate(task);
 
+        assertEquals(0, result.daysWithoutMovement());
         assertEquals(TaskPriority.URGENT, result.currentPriority());
         assertEquals(TaskPriority.URGENT, result.suggestedPriority());
     }
 
     @Test
-    void shouldNeverDecreasePriority() {
-
-        Task task = new Task();
-
-        task.setPriority(TaskPriority.HIGH);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(11)
-        );
-
-        TaskSlaDTO result = service.calculate(task);
-
-        assertEquals(TaskPriority.HIGH, result.currentPriority());
-        assertEquals(TaskPriority.HIGH, result.suggestedPriority());
-    }
-
-    @Test
-    void shouldCalculateDaysWithoutMovement() {
+    void shouldCalculateDaysUsingPriorityChangedAt() {
 
         Task task = new Task();
 
         task.setPriority(TaskPriority.MEDIUM);
+        task.setLastMovementAt(
+                LocalDateTime.now().minusDays(30)
+        );
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(5)
+        );
+
+        TaskSlaDTO result = service.calculate(task);
+
+        assertEquals(5, result.daysWithoutMovement());
+        assertEquals(TaskPriority.MEDIUM, result.currentPriority());
+        assertEquals(TaskPriority.MEDIUM, result.suggestedPriority());
+    }
+
+    @Test
+    void shouldUseLastMovementAtWhenPriorityChangedAtIsNull() {
+
+        Task task = new Task();
+
+        task.setPriority(TaskPriority.MEDIUM);
+        task.setPriorityChangedAt(null);
         task.setLastMovementAt(
                 LocalDateTime.now().minusDays(15)
         );
@@ -187,20 +180,22 @@ class TaskSlaServiceTest {
 
         assertEquals(15, result.daysWithoutMovement());
         assertEquals(TaskPriority.MEDIUM, result.currentPriority());
-        assertEquals(TaskPriority.MEDIUM, result.suggestedPriority());
+        assertEquals(TaskPriority.HIGH, result.suggestedPriority());
     }
-    
+
     @Test
     void shouldPersistMediumToHighEscalation() {
 
         Task task = new Task();
 
+        task.setTitle("Tarefa de teste");
         task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(21)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(15)
         );
 
-        TaskPriority result = service.escalateIfNecessary(task);
+        TaskPriority result =
+                service.escalateIfNecessary(task);
 
         assertEquals(TaskPriority.HIGH, result);
         assertEquals(TaskPriority.HIGH, task.getPriority());
@@ -212,19 +207,33 @@ class TaskSlaServiceTest {
                 TaskPriority.MEDIUM,
                 TaskPriority.HIGH
         );
+
+        verify(notificationService).create(
+                task.getAssignedTo(),
+                "TASK_SLA_ESCALATED",
+                "Prioridade elevada por SLA",
+                "A tarefa \"" + task.getTitle()
+                        + "\" teve a prioridade elevada de MEDIUM"
+                        + " para HIGH"
+                        + " por falta de movimentação.",
+                "TASK",
+                task.getId()
+        );
     }
-    
+
     @Test
     void shouldPersistHighToUrgentEscalation() {
 
         Task task = new Task();
 
+        task.setTitle("Tarefa de teste");
         task.setPriority(TaskPriority.HIGH);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(28)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(10)
         );
 
-        TaskPriority result = service.escalateIfNecessary(task);
+        TaskPriority result =
+                service.escalateIfNecessary(task);
 
         assertEquals(TaskPriority.URGENT, result);
         assertEquals(TaskPriority.URGENT, task.getPriority());
@@ -236,19 +245,91 @@ class TaskSlaServiceTest {
                 TaskPriority.HIGH,
                 TaskPriority.URGENT
         );
+
+        verify(notificationService).create(
+                task.getAssignedTo(),
+                "TASK_SLA_ESCALATED",
+                "Prioridade elevada por SLA",
+                "A tarefa \"" + task.getTitle()
+                        + "\" teve a prioridade elevada de HIGH"
+                        + " para URGENT"
+                        + " por falta de movimentação.",
+                "TASK",
+                task.getId()
+        );
     }
-    
+
+    @Test
+    void shouldResetPriorityChangedAtAfterEscalation() {
+
+        Task task = new Task();
+
+        task.setPriority(TaskPriority.MEDIUM);
+
+        LocalDateTime oldPriorityChangedAt =
+                LocalDateTime.now().minusDays(15);
+
+        task.setPriorityChangedAt(oldPriorityChangedAt);
+
+        service.escalateIfNecessary(task);
+
+        assertEquals(TaskPriority.HIGH, task.getPriority());
+
+        /*
+         * O novo ciclo deve começar agora.
+         */
+        assertEquals(
+                LocalDateTime.class,
+                task.getPriorityChangedAt().getClass()
+        );
+
+        /*
+         * O início do novo ciclo deve ser posterior
+         * ao início do ciclo anterior.
+         */
+        assertEquals(
+                true,
+                task.getPriorityChangedAt()
+                        .isAfter(oldPriorityChangedAt)
+        );
+    }
+
+    @Test
+    void shouldNotChangeLastMovementAtDuringAutomaticEscalation() {
+
+        Task task = new Task();
+
+        task.setPriority(TaskPriority.MEDIUM);
+
+        LocalDateTime lastMovementAt =
+                LocalDateTime.now().minusDays(20);
+
+        task.setLastMovementAt(lastMovementAt);
+
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(15)
+        );
+
+        service.escalateIfNecessary(task);
+
+        assertEquals(
+                lastMovementAt,
+                task.getLastMovementAt()
+        );
+    }
+
     @Test
     void shouldNotPersistWhenThereIsNoEscalation() {
 
         Task task = new Task();
 
         task.setPriority(TaskPriority.MEDIUM);
-        task.setLastMovementAt(
-                LocalDateTime.now().minusDays(15)
+        task.setPriorityChangedAt(
+                LocalDateTime.now().minusDays(14)
         );
 
-        TaskPriority result = service.escalateIfNecessary(task);
+        TaskPriority result =
+                service.escalateIfNecessary(task);
 
         assertEquals(TaskPriority.MEDIUM, result);
         assertEquals(TaskPriority.MEDIUM, task.getPriority());
@@ -262,6 +343,21 @@ class TaskSlaServiceTest {
                 task,
                 TaskPriority.MEDIUM,
                 TaskPriority.MEDIUM
+        );
+
+        verify(
+                notificationService,
+                never()
+        ).create(
+                task.getAssignedTo(),
+                "TASK_SLA_ESCALATED",
+                "Prioridade elevada por SLA",
+                "A tarefa \"" + task.getTitle()
+                        + "\" teve a prioridade elevada de MEDIUM"
+                        + " para MEDIUM"
+                        + " por falta de movimentação.",
+                "TASK",
+                task.getId()
         );
     }
 }

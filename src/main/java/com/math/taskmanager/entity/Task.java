@@ -70,6 +70,14 @@ public class Task extends BaseEntity {
     private LocalDateTime lastMovementAt;
 
     /*
+     * Início do ciclo da prioridade atual para o SLA.
+     *
+     * Controla há quanto tempo a tarefa está na prioridade atual.
+     */
+    @Column
+    private LocalDateTime priorityChangedAt;
+    
+    /*
      *  Usuário que criou a tarefa
      */
     @JsonIgnore
@@ -123,6 +131,10 @@ public class Task extends BaseEntity {
         if (lastMovementAt == null) {
         	lastMovementAt = LocalDateTime.now();
         
+        }
+        
+        if (priorityChangedAt == null) {
+            priorityChangedAt = lastMovementAt;
         }
     }
 }
